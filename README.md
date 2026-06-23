@@ -1,0 +1,210 @@
+<div align="center">
+
+```
+ ▄█     █▄    ▄█    █▄    ▄██   ▄      ▄████████   ▄████████ ████████▄  
+███     ███  ███    ███  ███   ██▄    ███    ███  ███    ███ ███   ▀███ 
+███     ███  ███    ███  ███▄▄▄███    ███    ███  ███    █▀  ███    ███ 
+███     ███  ███    ███  ▀▀▀▀▀▀███   ▄███▄▄▄▄██▀  ███        ███    ███ 
+███     ███  ███    ███  ▄██   ███  ▀▀███▀▀▀▀▀    ███        ███    ███ 
+███     ███  ███    ███  ███   ███  ▀███████████  ███    █▄  ███    ███ 
+███ ▄█▄ ███  ███    ███  ███   ███    ███    ███  ███    ███ ███   ▄███ 
+ ▀███▀███▀    ▀██████▀    ▀█████▀     ███    ███  ████████▀  ████████▀  
+                                       ███    ███                       
+```
+
+### offensive security toolkit — by [whyasd666](https://github.com/whyasd666)
+
+`#1 RU · TryHackMe King of the Hill` · CTF / bug bounty · team **CVC**
+
+[![Python](https://img.shields.io/badge/python-3.8+-39FF14?style=flat-square&logo=python&logoColor=black)](https://python.org)
+[![Bash](https://img.shields.io/badge/bash-4.0+-ff1a1a?style=flat-square&logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
+[![License](https://img.shields.io/badge/license-MIT-555?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/status-active-39FF14?style=flat-square)](https://github.com/whyasd666/t00ls)
+
+</div>
+
+---
+
+> Набор кастомных утилит для пентеста, CTF и red team тренировок. Каждый тул — свой
+> цвет, свой баннер, свой характер. Сделано под себя, выложено для всех.
+
+## ⚠ Disclaimer
+
+Инструменты предназначены **только** для авторизованного тестирования: CTF,
+bug bounty в рамках программы, пентест по договору / письменному разрешению
+владельца системы. Автор не несёт ответственности за использование во вред.
+No warranty, used at your own risk.
+
+---
+
+## 📦 Состав тулкита
+
+| Tool | Назначение | Стек | Палитра |
+|---|---|---|---|
+| [`whyxss.py`](#-whyxsspy) | XSS-сканер (reflected / DOM / blind) | Python 3 | acid green |
+| [`whyasdscan.py`](#-whyasdscanpy) | Сетевой сканер (port scan + vuln detect) | Python 3 + scapy | acid red |
+| [`whytrix.py`](#-whytrixpy) | Сканер уязвимостей Bitrix CMS | Python 3 | blue → violet → pink |
+| [`whyproc.sh`](#-whyprocsh) | Live-монитор процессов для CTF | Bash | red gradient |
+
+---
+
+## 🚀 Установка
+
+```bash
+git clone https://github.com/whyasd666/t00ls.git
+cd t00ls
+chmod +x *.sh
+
+# Зависимости (requests, beautifulsoup4, scapy) — авто через install.sh,
+# либо руками:
+pip install requests beautifulsoup4 scapy --break-system-packages
+```
+
+`install.sh` сам пробует `apt` → `pip --break-system-packages` → `pipx` →
+venv-фоллбэк (`~/.whyasdscan-venv`), если систему не даёт трогать напрямую.
+
+```bash
+./install.sh
+```
+
+---
+
+## 🟢 whyxss.py
+
+XSS-сканер уровня XSStrike: краулинг форм, DOM-анализ, фаззинг параметров,
+поддержка blind XSS и кастомных пейлоадов.
+
+```bash
+$ python3 whyxss.py -u https://target.com --forms --dom --level 3
+```
+
+**Возможности:**
+- Обход и тест всех форм на странице (`--forms`)
+- DOM-based XSS анализ (`--dom`)
+- Фаззинг GET/POST параметров (`--fuzzer`)
+- Blind XSS пейлоады для асинхронных колбэков (`--blind`)
+- Кастомный пейлоад вручную (`--payload`)
+- Многопоточность (`--threads`), proxy, кастомные cookies/headers
+- Экспорт результатов в файл (`-o report.json`)
+
+| Флаг | Описание |
+|---|---|
+| `-u, --url` | Целевой URL |
+| `-f, --file` | Список URL из файла |
+| `--forms` | Сканировать HTML-формы |
+| `--dom` | DOM XSS анализ |
+| `--fuzzer` | Фаззинг параметров |
+| `--blind` | Blind XSS режим |
+| `--level N` | Глубина проверки (1–3) |
+| `--threads N` | Кол-во потоков |
+| `-i, --interactive` | Интерактивный режим |
+| `-o, --output` | Файл отчёта |
+
+---
+
+## 🔴 whyasdscan.py
+
+Сетевой сканер «за пределами nmap»: SYN/UDP/ACK/FIN/XMAS/NULL-сканы поверх
+scapy, детект сервисов и версий, базовый SSL-анализ, проверка дефолтных
+кредов, подсказки по CVE для найденных версий ПО.
+
+```bash
+$ sudo python3 whyasdscan.py 192.168.1.0/24 -sS --top-ports 1000 -A
+```
+
+**Возможности:**
+- Типы сканов: `-sS` SYN, `-sT` TCP connect, `-sU` UDP, `-sA` ACK, `-sF` FIN,
+  `-sX` XMAS, `-sN` NULL, `-sn` ping scan
+- Детект ОС и версий сервисов (`-O`, `-sV`), агрессивный режим (`-A`)
+- Поиск известных уязвимостей по баннерам (`--vuln`)
+- Анализ SSL/TLS-конфигурации (`--ssl`)
+- Проверка дефолтных учётных данных (`--creds`)
+- Тайминг-профили `-T0`…`-T5` (от stealth до insane)
+- Экспорт в файл (`-oN report.txt`)
+
+> Без root — только TCP connect scan. С root (`sudo`) — полный набор:
+> SYN/UDP/OS detection.
+
+| Флаг | Описание |
+|---|---|
+| `-sS / -sT / -sU / -sA / -sF / -sX / -sN` | Тип скана |
+| `-p, -F, --top-ports` | Диапазон / быстрый / топ-N портов |
+| `-A` | Агрессивный режим (OS + version + vuln + script) |
+| `--vuln` | Поиск уязвимостей по баннерам |
+| `--ssl` | SSL/TLS-анализ |
+| `--creds` | Дефолтные креды |
+| `-T0`…`-T5` | Скорость скана |
+| `-oN FILE` | Сохранить отчёт |
+
+---
+
+## 🟣 whytrix.py
+
+Сканер уязвимостей для сайтов на **1C-Битрикс**: проверка типовых
+SQLi/XSS/LFI/SSRF, обход авторизации, утечки данных, опасные конфиги,
+известные CVE для модулей Bitrix, открытые редиректы, API-эндпоинты.
+
+```bash
+$ python3 whytrix.py -u https://target.ru --all
+```
+
+**Возможности:**
+- Полный скан всех категорий (`--all`) либо точечно: `--sqli`, `--xss`,
+  `--lfi`, `--ssrf`, `--auth`, `--redirect`, `--upload`, `--api`
+- Брутфорс типовых путей и админок Bitrix (`--paths`)
+- Сверка версии с базой известных CVE (`--cves`)
+- Анализ заголовков безопасности (`--headers`)
+- Поддержка cookies/proxy/UA, задержки между запросами (`--delay`)
+- Экспорт отчёта (`-o report.json`)
+
+| Флаг | Описание |
+|---|---|
+| `-u, --url` | Целевой сайт на Bitrix |
+| `--all` | Полный скан по всем категориям |
+| `--sqli / --xss / --lfi / --ssrf / --auth` | Точечная проверка категории |
+| `--paths` | Брут типовых путей/админок Bitrix |
+| `--cves` | Сверка версии с базой CVE |
+| `--proxy / --cookies / --ua` | Сетевые параметры запроса |
+| `-o, --output` | Файл отчёта |
+
+---
+
+## 🔥 whyproc.sh
+
+Live-монитор процессов на базе `/proc` — без зависимостей, без root.
+Сделан для CTF: подсвечивает реверс-шеллы, веб-шеллы, привилегированные
+команды (`sudo`/`su`/`pkexec`), файловые операции, архивацию, передачу
+файлов и другие категории действий прямо в реальном времени.
+
+```bash
+$ ./whyproc.sh
+```
+
+**Возможности:**
+- Классификация процессов по категориям: `REVSH`, `WSHELL`, `SSH`, `PRIV`,
+  `VIEW`, `EDIT`, `FILE`, `ARCH`, `XFER` и др.
+- Цветовая индикация важности (от обычных команд до подозрительных паттернов)
+- Резолв пользователя и tty процесса через `/proc/<pid>/status` и `stat`
+- Полностью на bash + `/proc`, работает на любой Linux-машине CTF-таргета
+  без установки пакетов
+
+---
+
+## 🛠 Стек
+
+`Python 3` · `Bash` · `scapy` · `requests` · `BeautifulSoup4` · `/proc` · `argparse`
+
+## 📡 Контакты
+
+- Telegram: [@whyasd666](https://t.me/whyasd666)
+- TryHackMe: [whyasd666](https://tryhackme.com/p/whyasd666) — `#1 RU King of the Hill`
+- Team: **CVC** (CTF / bug bounty)
+- Портфолио: [whyasd666.github.io/whyasd-bio](https://whyasd666.github.io/whyasd-bio/)
+
+---
+
+<div align="center">
+
+`PRs и issues — велкам. Используй с умом.`
+
+</div>
