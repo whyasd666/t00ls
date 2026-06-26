@@ -18,6 +18,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.8+-39FF14?style=flat-square&logo=python&logoColor=black)](https://python.org)
 [![Bash](https://img.shields.io/badge/bash-4.0+-ff1a1a?style=flat-square&logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
+[![Go](https://img.shields.io/badge/go-1.22+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev)
 [![License](https://img.shields.io/badge/license-MIT-555?style=flat-square)](LICENSE)
 [![Status](https://img.shields.io/badge/status-active-39FF14?style=flat-square)](https://github.com/whyasd666/t00ls)
 
@@ -45,6 +46,7 @@ No warranty, used at your own risk.
 | [`whyasdscan.py`](#-whyasdscanpy) | Сетевой сканер (port scan + vuln detect) | Python 3 + scapy | acid red |
 | [`whytrix.py`](#-whytrixpy) | Сканер уязвимостей Bitrix CMS | Python 3 | blue → violet → pink |
 | [`whyproc.sh`](#-whyprocsh) | Live-монитор процессов для CTF | Bash | red gradient |
+| [`whysentry`](#-whysentry) | Host-агент защиты: детект reverse shell + SUID-аудит (EDR/SOAR-lite) | Go (static, no CGO) | blood red / signal magenta |
 
 ---
 
@@ -190,9 +192,49 @@ $ ./whyproc.sh
 
 ---
 
+## 🛡 whysentry
+
+Host-агент активной защиты для Linux (EDR/SOAR-lite) — единственный
+**defensive** тул в этом репо, остальные выше offensive. Ставится на сервер
+и работает в фоне постоянно, а не запускается разово против цели: детектит
+reverse shell в реальном времени и аудитит SUID privesc-векторы при старте.
+
+```bash
+$ sudo ./whysentry.sh
+```
+
+**Возможности:**
+- Модульная архитектура (Core Engine + Monitor / Response / Audit) на общем
+  Go-интерфейсе `core.Module`, легко расширяется новыми модулями
+- Детект reverse shell по живому сетевому сокету на `stdin/stdout/stderr`
+  процесса (`/proc/[pid]/fd`) — это и есть техническая суть reverse shell,
+  почти нулевой false-positive → авто-kill (`syscall.Kill`, `SIGKILL`)
+- Доп. слой — якорные regex-сигнатуры известных one-liner'ов (`/dev/tcp/`,
+  `nc -e /bin/sh`, `pty.spawn(`, `socket.socket()+connect/dup2`, ...), но
+  только как **low-confidence** warning без авто-действия: текстовый анализ
+  cmdline в принципе не может надёжно отличить «упомянуто» от «исполняется»
+- Разовый SUID privesc sweep при старте — сверка с GTFOBins-кандидатами
+  (`find`, `vim`, `pkexec`, `awk`, `nmap`, `perl`, ...)
+- Один статический бинарник, `CGO_ENABLED=0` — без пересборки работает на
+  Ubuntu / Debian / CentOS / Rocky / Alpine, независимо от glibc/musl и
+  init-системы (systemd / OpenRC)
+
+| Модуль | Назначение |
+|---|---|
+| `core` | Диспетчер модулей, graceful shutdown по `SIGINT`/`SIGTERM` |
+| `monitor` | Скан `/proc` каждые 2-3с, детект reverse shell (socket-stdio + паттерны) |
+| `response` | `syscall.Kill(pid, SIGKILL)` + структурированный лог события |
+| `audit` | Разовый SUID-скан при старте по ключевым каталогам ФС |
+
+> `whysentry.sh` — единая точка входа: если бинарник не собран, соберёт
+> (`go build`, статически) и сразу запустит. Нужен root — для чтения
+> `/proc/[pid]/fd` чужих процессов и `syscall.Kill` за пределами своего uid.
+
+---
+
 ## 🛠 Стек
 
-`Python 3` · `Bash` · `scapy` · `requests` · `BeautifulSoup4` · `/proc` · `argparse`
+`Python 3` · `Bash` · `Go` · `scapy` · `requests` · `BeautifulSoup4` · `/proc` · `syscall` · `argparse`
 
 ## 📡 Контакты
 
