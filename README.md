@@ -47,6 +47,7 @@ No warranty, used at your own risk.
 | [`whytrix.py`](#-whytrixpy) | Сканер уязвимостей Bitrix CMS | Python 3 | blue → violet → pink |
 | [`whyproc.sh`](#-whyprocsh) | Live-монитор процессов для CTF | Bash | red gradient |
 | [`whysentry`](#-whysentry) | Host-агент защиты: детект reverse shell + SUID-аудит (EDR/SOAR-lite) | Go (static, no CGO) | blood red / signal magenta |
+| [`whyhard`](#-whyhard) | Кросс-дистрибутивный Linux hardening (audit + fix): sysctl, SSH, accounts, SUID/permissions, legacy-сервисы | Go (static, no CGO) | acid red / safety yellow |
 
 ---
 
@@ -229,6 +230,63 @@ $ sudo ./whysentry.sh
 > `whysentry.sh` — единая точка входа: если бинарник не собран, соберёт
 > (`go build`, статически) и сразу запустит. Нужен root — для чтения
 > `/proc/[pid]/fd` чужих процессов и `syscall.Kill` за пределами своего uid.
+
+---
+
+## 🟡 whyhard
+
+Кросс-дистрибутивный инструмент Linux hardening (audit + fix) — второй
+defensive-тул в репо, тот же подход к архитектуре, что у `whysentry`
+(статический Go, Core Engine + модули), но однопроходный: проверил,
+по желанию исправил, напечатал отчёт, вышел — а не работает в фоне.
+
+```bash
+$ ./whyhard.sh                  # audit — только чтение, ничего не меняет
+$ sudo ./whyhard.sh --apply        # + безопасные фиксы
+$ sudo ./whyhard.sh --apply-risky  # + рискованные фиксы (внимательно!)
+```
+
+**Философия — tiered safety, не "закрыть всё одним махом":** каждая
+находка размечена уровнем риска применения фикса:
+
+| Risk | Когда применяется | Примеры |
+|---|---|---|
+| `safe` | `--apply` | sysctl, права на файлы, login.defs, баннеры |
+| `risky` | `--apply-risky` | `PermitRootLogin no`, `PasswordAuthentication no`, стоп legacy-сервисов |
+| `report-only` | никогда (только аудит) | пустые пароли, дубли UID 0, world-writable файлы |
+
+`PasswordAuthentication no` дополнительно проверяется на наличие хотя бы
+одного `authorized_keys` в системе — иначе фикс пропускается, чтобы не
+отрезать себе единственный путь на сервер.
+
+**Возможности:**
+- **sysctl** — ICMP redirects/source-route, rp_filter, SYN cookies, ASLR,
+  `dmesg_restrict`, `kptr_restrict`, `fs.protected_*`, персистентно в
+  `/etc/sysctl.d/99-whyhard.conf`
+- **filesystem** — права `/etc/shadow`, SSH host-ключей, `grub.cfg`;
+  поиск world-writable файлов без sticky bit; `noexec/nosuid/nodev` для
+  `/tmp`, `/var/tmp`, `/dev/shm`
+- **ssh** — 9 safe-директив (`X11Forwarding no`, `MaxAuthTries`, и т.д.) +
+  2 risky (`PermitRootLogin`, `PasswordAuthentication`); backup перед
+  каждой правкой; **никогда не делает `reload/restart sshd` сам**
+- **accounts** — password policy в `login.defs`; аудит пустых паролей и
+  не-root аккаунтов с UID 0 (report-only)
+- **banner** — legal warning в `/etc/issue`, `/etc/issue.net`
+- **services** — `telnet`/`rsh`/`rlogin`/`rexec`/`tftp`, отключение
+  только с `--apply-risky`
+
+| Модуль | Назначение |
+|---|---|
+| `sysctl` | Hardening параметров ядра/сети |
+| `filesystem` | Права критичных файлов + world-writable scan + mount-флаги |
+| `ssh` | Hardening `sshd_config` с защитой от lockout |
+| `accounts` | Password policy + аудит подозрительных аккаунтов |
+| `banner` | Legal-баннер при логине |
+| `services` | Аудит/отключение legacy-демонов |
+
+> Печатает цветной summary с **hardening score** (% проверок в норме) и
+> сохраняет полный отчёт в файл. Exit code `0`, если не осталось
+> непокрытых находок high/critical — удобно для cron/CI.
 
 ---
 
