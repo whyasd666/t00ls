@@ -1,0 +1,72 @@
+whyhard report — 2026-06-27T20:43:33+03:00
+mode: apply
+
+
+== sysctl ==
+[ok] (high/safe) net.ipv4.conf.all.accept_redirects — = 0
+[fixed] (high/safe) net.ipv4.conf.default.accept_redirects — 1 -> 0
+[fixed] (medium/safe) net.ipv4.conf.all.send_redirects — 1 -> 0
+[ok] (high/safe) net.ipv4.conf.all.accept_source_route — = 0
+[fixed] (high/safe) net.ipv4.conf.default.accept_source_route — 1 -> 0
+[fixed] (medium/safe) net.ipv4.conf.all.rp_filter — 2 -> 1
+[ok] (low/safe) net.ipv4.icmp_echo_ignore_broadcasts — = 1
+[ok] (low/safe) net.ipv4.icmp_ignore_bogus_error_responses — = 1
+[ok] (medium/safe) net.ipv4.tcp_syncookies — = 1
+[fixed] (medium/safe) net.ipv6.conf.all.accept_redirects — 1 -> 0
+[ok] (medium/safe) net.ipv6.conf.all.accept_source_route — = 0
+[ok] (high/safe) kernel.randomize_va_space — = 2
+[fixed] (medium/safe) kernel.dmesg_restrict — 0 -> 1
+[fixed] (medium/safe) kernel.kptr_restrict — 1 -> 2
+[ok] (medium/safe) fs.protected_hardlinks — = 1
+[ok] (medium/safe) fs.protected_symlinks — = 1
+[ok] (high/safe) fs.suid_dumpable — = 0
+[fixed] (info/safe) persist:/etc/sysctl.d/99-whyhard.conf — параметры сохранены персистентно в /etc/sysctl.d/99-whyhard.conf
+
+== filesystem ==
+[fixed] (critical/safe) /etc/shadow — /etc/shadow: -rw-r----- -> -rw-------
+[fixed] (critical/safe) /etc/gshadow — /etc/gshadow: -rw-r----- -> -rw-------
+[ok] (low/safe) /etc/passwd — /etc/passwd (-rw-r--r--)
+[ok] (low/safe) /etc/group — /etc/group (-rw-r--r--)
+[ok] (critical/safe) /etc/ssh/ssh_host_ecdsa_key — /etc/ssh/ssh_host_ecdsa_key (-rw-------)
+[ok] (critical/safe) /etc/ssh/ssh_host_ed25519_key — /etc/ssh/ssh_host_ed25519_key (-rw-------)
+[ok] (critical/safe) /etc/ssh/ssh_host_rsa_key — /etc/ssh/ssh_host_rsa_key (-rw-------)
+[ok] (info/report-only) world-writable-scan — world-writable файлов без sticky bit не найдено в [/etc /usr /opt /var/www]
+[ok] (low/risky) mount:/tmp — /tmp — отдельная точка монтирования не найдена (часть корня), пропускаем
+[ok] (low/risky) mount:/var/tmp — /var/tmp — отдельная точка монтирования не найдена (часть корня), пропускаем
+[skipped-risky] (medium/risky) mount:/dev/shm — /dev/shm: отсутствуют флаги [noexec] — может сломать ПО, исполняющее файлы из tmp; требует --apply-risky
+
+== ssh ==
+[fixed] (low/safe) Protocol — Protocol: (не задано, default зависит от сборки OpenSSH) -> 2
+[fixed] (low/safe) X11Forwarding — X11Forwarding: yes -> no
+[fixed] (low/safe) MaxAuthTries — MaxAuthTries: (не задано, default зависит от сборки OpenSSH) -> 3
+[fixed] (low/safe) LoginGraceTime — LoginGraceTime: (не задано, default зависит от сборки OpenSSH) -> 30
+[fixed] (low/safe) ClientAliveInterval — ClientAliveInterval: (не задано, default зависит от сборки OpenSSH) -> 300
+[fixed] (low/safe) ClientAliveCountMax — ClientAliveCountMax: (не задано, default зависит от сборки OpenSSH) -> 2
+[fixed] (critical/safe) PermitEmptyPasswords — PermitEmptyPasswords: (не задано, default зависит от сборки OpenSSH) -> no
+[fixed] (medium/safe) IgnoreRhosts — IgnoreRhosts: (не задано, default зависит от сборки OpenSSH) -> yes
+[fixed] (medium/safe) HostbasedAuthentication — HostbasedAuthentication: (не задано, default зависит от сборки OpenSSH) -> no
+[skipped-risky] (high/risky) PermitRootLogin — PermitRootLogin: (не задано, default зависит от сборки OpenSSH) -> no пропущено, нужен --apply-risky (риск потери SSH-доступа при ошибке)
+[skipped-risky] (high/risky) PasswordAuthentication — PasswordAuthentication: (не задано, default зависит от сборки OpenSSH) -> no пропущено, нужен --apply-risky (риск потери SSH-доступа при ошибке)
+[fixed] (info/risky) sshd_config:write — конфиг изменён, backup сохранён рядом (*.whyhard.bak.<timestamp>). ВАЖНО: проверьте `sshd -t` и перезагрузите конфиг (`systemctl reload sshd`) вручную — whyhard НИКОГДА не делает restart/reload сам, чтобы не оборвать вашу текущую сессию
+
+== accounts ==
+[fixed] (medium/safe) PASS_MAX_DAYS — PASS_MAX_DAYS: 99999 -> 90
+[fixed] (low/safe) PASS_MIN_DAYS — PASS_MIN_DAYS: 0 -> 1
+[ok] (low/safe) PASS_WARN_AGE — PASS_WARN_AGE 7
+[fixed] (medium/safe) UMASK — UMASK: 022 -> 027
+[fixed] (info/safe) login.defs:write — login.defs обновлён, backup сохранён рядом (*.whyhard.bak.<timestamp>)
+[ok] (info/report-only) empty-passwords — аккаунтов с пустым полем пароля в /etc/shadow не найдено
+[ok] (info/report-only) duplicate-root-uid — других аккаунтов с UID 0 кроме root не найдено
+
+== banner ==
+[fixed] (low/safe) /etc/issue — /etc/issue обновлён (legal-баннер)
+[fixed] (low/safe) /etc/issue.net — /etc/issue.net обновлён (legal-баннер)
+
+== services ==
+[ok] (critical/risky) telnet.socket — telnet.socket не активен
+[ok] (critical/risky) rsh.socket — rsh.socket не активен
+[ok] (critical/risky) rlogin.socket — rlogin.socket не активен
+[ok] (critical/risky) rexec.socket — rexec.socket не активен
+[ok] (high/risky) tftp.socket — tftp.socket не активен
+
+Hardening score: 94% (49/52)
